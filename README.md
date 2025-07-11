@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🚗 CarsNPoke
 
-## Getting Started
+**CarsNPoke** is a full-stack web application that allows users to upload a photo of their real-life car and select a Pokémon to be added seamlessly into the image. The app uses AI to generate a composite image where the selected Pokémon is naturally placed into the scene with appropriate lighting, scale, and shadows — like it's actually part of the photo.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 📸 Demo
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Live app: [https://carsnpoke.vercel.app](https://carsnpoke.vercel.app)
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧩 Features
 
-## Learn More
+- 🔐 Google OAuth authentication (via Supabase)
+- 🖼 Upload real car photos
+- 🎨 AI-generated image composition (adds a Pokémon in a natural, stylized way)
+- 🧠 Smart prompt engineering to maintain Pokémon's official anime style
+- 📁 Secure user-specific image storage using Supabase Storage
+- 📥 Download button to save final generated image
+- 📱 Fully responsive frontend (mobile and desktop)
+- 🧭 Live Pokémon sprite reference for accuracy using PokeAPI
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Technologies Used
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 🔷 Frontend
+- **Next.js 14 (App Router)**
+- **Tailwind CSS** for styling
+- **Axios** for HTTP requests
+- **Supabase Auth** for user login
+- **Supabase Storage** for image uploads
+- **PokeAPI** for real Pokémon name/id list and sprites
 
-## Deploy on Vercel
+### 🔶 Backend
+- **FastAPI (Python)** for the `/generate-image` endpoint
+- **DALL·E (GPT-4o)** API call to generate images from prompts
+- **Base64 Image Encoding** for sending generated images back to the frontend
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🚀 How It Works
+
+1. **User logs in** with Google (OAuth via Supabase)
+2. **User uploads a car image** (PNG or JPEG)
+3. **User selects a Pokémon** from the full Pokédex (using live data from PokeAPI)
+4. **Image is uploaded** to Supabase Storage
+5. **Frontend sends a request** to the backend with:
+   - image URL
+   - Pokémon name
+   - Pokémon ID (used to fetch sprite from PokeAPI)
+6. **Backend generates the final image** using the OpenAI API, applying prompt engineering and sprite reference
+7. **Result image is sent back**, displayed in-app, and made downloadable.
+
+---
