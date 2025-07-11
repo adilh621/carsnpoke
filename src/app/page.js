@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import Header from './Components/Header'; // Adjust the import path as necessary
-import { supabase } from '../../lib/supabaseClient'; // Adjust the import path as necessary
-
+import Header from './Components/Header';
+import { supabase } from '../../lib/supabaseClient';
 
 export default function HomePage() {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [pokemon, setPokemon] = useState('');
+  const [pokemon, setPokemon] = useState(null);
   const [resultImage, setResultImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [pokemonList, setPokemonList] = useState([]);
@@ -21,8 +20,18 @@ export default function HomePage() {
       try {
         const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=1025');
         const results = response.data.results;
-        const names = results.map((p) => p.name.charAt(0).toUpperCase() + p.name.slice(1));
-        setPokemonList(names);
+
+        const pokemonDetails = await Promise.all(
+          results.map(async (pokemon) => {
+            const res = await axios.get(pokemon.url);
+            return {
+              name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
+              id: res.data.id
+            };
+          })
+        );
+
+        setPokemonList(pokemonDetails);
       } catch (error) {
         console.error('Failed to fetch Pokémon:', error);
       }
@@ -58,6 +67,7 @@ export default function HomePage() {
     if (file && allowedTypes.includes(file.type)) {
       setImage(file);
       setPreview(URL.createObjectURL(file));
+      setResultImage(null);
     } else {
       alert('Only PNG or JPEG images are allowed');
     }
@@ -65,36 +75,36 @@ export default function HomePage() {
 
   const handleSubmit = async () => {
     if (!image || !pokemon) {
-      alert('Please upload a PNG or JPEG image and select a Pokémon');
+      alert('Please upload an image and select a Pokémon');
       return;
     }
 
     setLoading(true);
 
     try {
-      // 1. Upload image to Supabase
       const fileExt = image.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
-      const { data, error } = await supabase.storage
-        .from('uploadedimage') // 👈 your Supabase bucket name
-        .upload(`user_uploads/${fileName}`, image, {
+      const filePath = `user_uploads/${user.id}/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from('uploadedimage')
+        .upload(filePath, image, {
           cacheControl: '3600',
           upsert: false,
         });
 
       if (error) throw new Error(`Upload failed: ${error.message}`);
 
-      // 2. Get public URL
       const { data: publicUrlData } = supabase.storage
         .from('uploadedimage')
-        .getPublicUrl(`user_uploads/${fileName}`);
-      
+        .getPublicUrl(filePath);
+
       const imageUrl = publicUrlData.publicUrl;
 
-      // 3. Send to backend as raw JSON
-      const res = await axios.post('http://localhost:8000/generate-image/', {
+      const res = await axios.post('https://carsnpoke-backend-production.up.railway.app/generate-image/', {
         image_url: imageUrl,
-        pokemon,
+        pokemon_name: pokemon.name,
+        pokemon_id: pokemon.id
       });
 
       const base64Data = res.data.image;
@@ -110,34 +120,34 @@ export default function HomePage() {
   return (
     <>
       <Header />
-      {showLoginModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-        <div className="bg-gray-900 p-8 rounded-lg shadow-lg max-w-sm w-full text-center">
-          <h2 className="text-xl text-white font-semibold mb-4">Please sign in to upload</h2>
-          <button
-            onClick={async () => {
-              await supabase.auth.signInWithOAuth({ provider: 'google' });
-              setShowLoginModal(false);
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded"
-          >
-            Sign in with Google
-          </button>
-          <button
-            onClick={() => setShowLoginModal(false)}
-            className="mt-4 block text-gray-400 hover:text-white text-sm"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    )}
 
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-900 p-8 rounded-lg shadow-lg max-w-sm w-full text-center">
+            <h2 className="text-xl text-white font-semibold mb-4">Please sign in to upload</h2>
+            <button
+              onClick={async () => {
+                await supabase.auth.signInWithOAuth({ provider: 'google' });
+                setShowLoginModal(false);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded"
+            >
+              Sign in with Google
+            </button>
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="mt-4 block text-gray-400 hover:text-white text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center pt-28 px-6 pb-12">
         <h1 className="text-4xl font-bold mb-6 text-center">Generate Pokémon + Car Images</h1>
 
-        {/* Input section */}
+        {/* Upload + Controls */}
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-6">
           <input
             type="file"
@@ -145,20 +155,19 @@ export default function HomePage() {
             onChange={handleImageChange}
             className="text-sm"
           />
-
           <select
-            value={pokemon}
-            onChange={(e) => setPokemon(e.target.value)}
+            value={pokemon?.name || ''}
+            onChange={(e) => {
+              const selected = pokemonList.find(p => p.name === e.target.value);
+              setPokemon(selected);
+            }}
             className="p-2 text-white rounded bg-gray-800"
           >
             <option value="">Select a Pokémon</option>
-            {pokemonList.map((name, index) => (
-              <option key={index} value={name}>
-                {name}
-              </option>
+            {pokemonList.map((p, index) => (
+              <option key={index} value={p.name}>{p.name}</option>
             ))}
           </select>
-
           <button
             onClick={handleSubmit}
             disabled={loading}
@@ -168,43 +177,33 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* Preview + Result Side-by-Side */}
-        <div className="flex flex-col md:flex-row justify-center gap-12 mt-4 w-full max-w-5xl">
-          {/* Left: Original Upload */}
-          <div className="flex-1 text-center">
-            <h2 className="text-lg font-semibold mb-2">Your Upload</h2>
-            {preview ? (
-              <img
-                src={preview}
-                alt="Preview"
-                className="w-full max-w-md h-auto rounded-lg border border-gray-700 mx-auto"
-              />
-            ) : (
-              <div className="text-gray-500">No image selected</div>
-            )}
-          </div>
-
-          {/* Right: Result or Spinner */}
-          <div className="flex-1 text-center">
-            <h2 className="text-lg font-semibold mb-2">Result</h2>
-
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : resultImage ? (
-              <img
-                src={resultImage}
-                alt="Generated"
-                className="w-full max-w-md h-auto rounded-lg border border-gray-700 mx-auto"
-              />
-            ) : (
-              <div className="text-gray-500">No result yet</div>
-            )}
-          </div>
+        {/* Unified Image Preview / Result */}
+        {/* Unified Image Preview / Result */}
+        <div className="w-full max-w-2xl border border-gray-700 rounded-lg p-4 bg-gray-900 flex flex-col items-center justify-center min-h-[400px]">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center text-white">
+              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-gray-300">Generating image...</p>
+            </div>
+          ) : resultImage ? (
+            <>
+              <img src={resultImage} alt="Result" className="rounded max-w-full max-h-[480px] mb-4" />
+              <a
+                href={resultImage}
+                download="carsnpoke_result.png"
+                className="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold"
+              >
+                Download Image
+              </a>
+            </>
+          ) : preview ? (
+            <img src={preview} alt="Preview" className="rounded max-w-full max-h-[480px]" />
+          ) : (
+            <p className="text-gray-500">No image selected</p>
+          )}
         </div>
-      </main>
 
+      </main>
     </>
   );
 }

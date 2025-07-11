@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from "../../../lib/supabaseClient"; // Adjust the import path as necessary
+import { supabase } from "../../../lib/supabaseClient";
+import Image from 'next/image';
+import logo from "../../../public/carsnpoke.png"
 
 export default function Header() {
   const [user, setUser] = useState(null);
@@ -30,9 +32,16 @@ export default function Header() {
   };
 
   return (
-    <header className="w-full bg-gray-900 text-white py-4 px-6 shadow-md flex justify-between items-center fixed top-0 left-0 z-50">
-      <div className="text-2xl font-bold">CarsNPoke</div>
-      <div className="space-x-4">
+    <header className="w-full bg-gray-900 text-white px-6 shadow-md flex justify-between items-center fixed top-0 left-0 z-50 h-20">
+      <div className="flex items-center space-x-3 h-full">
+        <Image 
+          src={logo} 
+          alt="CarsNPoke Logo" 
+          className="h-32 w-auto object-contain"
+          priority
+        />
+      </div>
+      <div className="space-x-4 flex items-center">
         {user ? (
           <>
             <span className="text-sm">Hello, {user.email}</span>
@@ -41,13 +50,12 @@ export default function Header() {
             </button>
           </>
         ) : (
-          <>
-            <button onClick={handleLogin} className="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded">
-              Login with Google
-            </button>
-          </>
+          <button onClick={handleLogin} className="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded">
+            Login with Google
+          </button>
         )}
       </div>
     </header>
+
   );
 }
