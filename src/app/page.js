@@ -170,12 +170,16 @@ export default function HomePage() {
 
         {/* Upload + Controls */}
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-6">
-          <input
-            type="file"
-            accept="image/png, image/jpeg, image/jpg"
-            onChange={handleImageChange}
-            className="text-sm"
-          />
+          <label className="bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded cursor-pointer inline-block">
+            Upload Image
+            <input
+              type="file"
+              accept="image/png, image/jpeg, image/jpg"
+              onChange={handleImageChange}
+              className="hidden"
+            />
+          </label>
+
           <select
             value={pokemon?.name || ''}
             onChange={(e) => {
