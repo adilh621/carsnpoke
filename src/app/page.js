@@ -15,30 +15,51 @@ export default function HomePage() {
   const [user, setUser] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
+  // useEffect(() => {
+  //   const fetchPokemon = async () => {
+  //     try {
+  //       const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=1025');
+  //       const results = response.data.results;
+
+  //       const pokemonDetails = await Promise.all(
+  //         results.map(async (pokemon) => {
+  //           const res = await axios.get(pokemon.url);
+  //           return {
+  //             name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
+  //             id: res.data.id
+  //           };
+  //         })
+  //       );
+
+  //       setPokemonList(pokemonDetails);
+  //     } catch (error) {
+  //       console.error('Failed to fetch Pokémon:', error);
+  //     }
+  //   };
+
+  //   fetchPokemon();
+  // }, []);
   useEffect(() => {
-    const fetchPokemon = async () => {
-      try {
-        const response = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=1025');
-        const results = response.data.results;
+  const fetchPokemon = async () => {
+    try {
+      const response = await fetch('/pokedex.json'); // Since it's in /public
+      const data = await response.json();
 
-        const pokemonDetails = await Promise.all(
-          results.map(async (pokemon) => {
-            const res = await axios.get(pokemon.url);
-            return {
-              name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
-              id: res.data.id
-            };
-          })
-        );
+      // Map it into { name, id } using the English name
+      const simplifiedList = data.map(pokemon => ({
+        name: pokemon.name.english,
+        id: pokemon.id
+      }));
 
-        setPokemonList(pokemonDetails);
-      } catch (error) {
-        console.error('Failed to fetch Pokémon:', error);
-      }
-    };
+      setPokemonList(simplifiedList);
+    } catch (error) {
+      console.error('Failed to load pokedex.json:', error);
+    }
+  };
 
-    fetchPokemon();
-  }, []);
+  fetchPokemon();
+}, []);
+
 
   useEffect(() => {
     const getUser = async () => {
