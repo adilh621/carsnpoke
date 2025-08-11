@@ -122,7 +122,7 @@ export default function HomePage() {
 
       const imageUrl = publicUrlData.publicUrl;
 
-      const res = await axios.post('hhttps://carsnpoke-backend.onrender.com/generate-image/', {
+      const res = await axios.post('https://carsnpoke-backend.onrender.com/generate-image/', {
         image_url: imageUrl,
         pokemon_name: pokemon.name,
         pokemon_id: pokemon.id
